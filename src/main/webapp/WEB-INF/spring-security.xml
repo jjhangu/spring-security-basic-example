@@ -1,0 +1,64 @@
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/security
+	http://www.springframework.org/schema/security/spring-security-3.2.xsd
+	http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+	
+	<beans:bean id="authProvider" class="com.mkyong.web.service.CustomAuthenticationProvider">		
+	</beans:bean>
+	<!-- 로그인이 실패할경우 아래의  서비스를 탄다-->	
+	<beans:bean id="loginFailuerHandler" class="com.mkyong.web.service.LoginFailureHandler">	
+	</beans:bean>
+	<beans:bean id="restAuthenticationEntryPoint" class="com.mkyong.web.service.RestAuthenticationEntryPoint">	
+	</beans:bean>
+	<beans:bean id="authenticationTokenProcessingFilter" class="com.mkyong.web.service.AuthenticationTokenProcessingFilter">	
+	</beans:bean>
+
+	<!-- security를 타지 않는다 -->
+	<http pattern="/resources/**" security="none" />
+
+	<http auto-config="true" use-expressions="true"  entry-point-ref="restAuthenticationEntryPoint">
+		<!-- 순서대로 interceptor 가 됨 예외를 위한 url은 처음에 와야함 -->
+		<intercept-url pattern="/resources/**" access="permitAll" />
+		
+		<intercept-url pattern="/admin**" access="isAuthenticated()" />
+		<intercept-url pattern="/club" access="hasRole('ROLE_USER')" />
+		<intercept-url pattern="/clubadmin" access="permitAll" />
+		<intercept-url pattern="/login" access="permitAll" />		
+		<intercept-url pattern="/**" access="isAuthenticated()" />
+		
+		<form-login 
+		    login-page="/login" 
+		    default-target-url="/welcome"					
+    		authentication-failure-handler-ref="loginFailuerHandler" 
+			username-parameter="username"
+			password-parameter="password" />
+		<logout logout-success-url="/login?logout"  />
+		<!-- enable csrf protection -->
+		<csrf/> 
+		
+		<!--
+			entry-point-ref :  
+			<access-denied-handler error-page="/login" /> 
+		-->
+		  
+		<custom-filter ref="authenticationTokenProcessingFilter"  before="FORM_LOGIN_FILTER"  />		
+	
+		<session-management>
+            <concurrency-control max-sessions="1"  error-if-maximum-exceeded="true"/>
+        </session-management>
+	</http>
+
+	<authentication-manager>
+		<authentication-provider ref="authProvider">
+			<!-- <user-service>
+				<user name="mkyong" password="123456" authorities="ROLE_USER" />
+			</user-service> -->
+		</authentication-provider>
+	</authentication-manager>
+
+</beans:beans>
